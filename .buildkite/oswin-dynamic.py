@@ -38,22 +38,24 @@ def generate_yaml_data(items):
                 'label': item['label'],
                 'key': item['key'],
                 'depends_on': item['depends_on'],
-                "env": {
-                    "BUILDKITE_PLUGIN_FS_CACHE_FOLDER": step_cache_folder
-                },
                 'commands': format_commands(item['commands']),
                 'plugins': format_plugins(item['plugins'])
             }
+            if 'clone' in item['key']:
+                step["env"] = {
+                    "BUILDKITE_PLUGIN_FS_CACHE_FOLDER": step_cache_folder
+                }
         else:
             step = {
                 'label': item['label'],
                 'key': item['key'],
-                "env": {
-                    "BUILDKITE_PLUGIN_FS_CACHE_FOLDER": step_cache_folder
-                },
                 'commands': format_commands(item['commands']),
                 'plugins': format_plugins(item['plugins'])
             }
+            if 'clone' in item['key']:
+                step["env"] = {
+                    "BUILDKITE_PLUGIN_FS_CACHE_FOLDER": step_cache_folder
+                }
         steps.append(step)
 
     # Generate env dictionary, too
