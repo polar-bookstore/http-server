@@ -1,0 +1,53 @@
+[
+  {
+    "key": "clone-server",
+    "label": ":github: clone SERVER :computer:",
+    "commands": ["rm -fr http-server", "git clone https://github.com/polar-bookstore/http-server.git http-server", "cd http-server && pwd && ls -la", "echo \"AWS_REGION: $${AWS_REGION}\""],
+    "plugins": [
+      { "cache#v1.1.0": { "path": "http-server", "restore": "pipeline", "save": "pipeline" } }
+    ]
+  },
+  {
+    "key": "clone-ui",
+    "label": ":github: clone UI :spider_web:",
+    "commands": ["rm -fr ui", "git clone https://github.com/polar-bookstore/http-server.git ui", "cd ui && pwd && ls -la", "echo \"AWS_REGION: $${AWS_REGION}\""],
+    "plugins": [
+      { "cache#v1.1.0": { "path": "ui", "restore": "pipeline", "save": "pipeline" } }
+    ]
+  },
+  {
+    "key": "clone-catalog",
+    "label": ":github: clone CATALOG :books:",
+    "commands": ["rm -fr catalog", "git clone https://github.com/polar-bookstore/http-server.git catalog", "cd catalog && pwd && ls -la", "echo \"AWS_REGION: $${AWS_REGION}\""],
+    "plugins": [
+      { "cache#v1.1.0": { "path": "catalog", "restore": "pipeline", "save": "pipeline" } }
+    ]
+  },
+  {
+    "key": "build-server",
+    "label": ":building_construction: :test_tube: Build and Test SERVER :computer:",
+    "depends_on": "clone-server",
+    "commands": ["echo npm test", "cd http-server && ls -la", "echo \"AWS_REGION: $${AWS_REGION}\""],
+    "plugins": [
+      { "cache#v1.1.0": { "path": "http-server", "restore": "pipeline", "save": "pipeline" } }
+    ]
+  },
+  {
+    "key": "build-ui",
+    "label": ":building_construction: :test_tube: Build and Test UI :spider_web:",
+    "depends_on": "clone-ui",
+    "commands": ["echo source \"$$HOME/.sdkman/bin/sdkman-init.sh\"", "echo chmod +x gradlew", "echo ./gradlew buildAngular", "cd ui && ls -la", "echo \"AWS_REGION: $${AWS_REGION}\""],
+    "plugins": [
+      { "cache#v1.1.0": { "path": "ui", "restore": "pipeline", "save": "pipeline" } }
+    ]
+  },
+  {
+    "key": "build-catalog",
+    "label": ":building_construction: :test_tube: Build and Test CATALOG :books:",
+    "depends_on": "clone-catalog",
+    "commands": ["echo source \"$$HOME/.sdkman/bin/sdkman-init.sh\"", "echo chmod +x gradlew", "echo ./gradlew build", "cd catalog && ls -la", "echo \"AWS_REGION: $${AWS_REGION}\""],
+    "plugins": [
+      { "cache#v1.1.0": { "path": "catalog", "restore": "pipeline", "save": "pipeline" } }
+    ]
+  }
+]
