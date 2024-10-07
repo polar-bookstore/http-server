@@ -59,7 +59,7 @@ def generate_yaml_data(items):
 
     # and don't forget our queue specification
     agents = {
-        'queue': 'pbof'
+        'queue': 'new_queu'
     }
 
     return {'agents': agents, 'env': env, 'steps': steps}
