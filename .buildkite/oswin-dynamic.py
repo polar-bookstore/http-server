@@ -32,11 +32,15 @@ def format_plugins(plugins):
 def generate_yaml_data(items):
     steps = []
     for item in items:
+        step_cache_folder = f"/var/cache/buildkite/{item['key']}"
         if item.get('depends_on'):
             step = {
                 'label': item['label'],
                 'key': item['key'],
                 'depends_on': item['depends_on'],
+                "env": {
+                    "BUILDKITE_PLUGIN_FS_CACHE_FOLDER": step_cache_folder
+                },
                 'commands': format_commands(item['commands']),
                 'plugins': format_plugins(item['plugins'])
             }
@@ -44,6 +48,9 @@ def generate_yaml_data(items):
             step = {
                 'label': item['label'],
                 'key': item['key'],
+                "env": {
+                    "BUILDKITE_PLUGIN_FS_CACHE_FOLDER": step_cache_folder
+                },
                 'commands': format_commands(item['commands']),
                 'plugins': format_plugins(item['plugins'])
             }
