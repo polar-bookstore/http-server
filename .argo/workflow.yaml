@@ -1,0 +1,103 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: build-docker-http-server
+spec:
+  entrypoint: build-docker-image
+  serviceAccountName: argo-workflow-sa
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace-pvc
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: gp2-csi  # Update if needed
+  templates:
+    - name: build-docker-image
+      steps:
+        - - name: clone-repo
+            template: clone
+        - - name: run-tests-1
+            template: test-1
+          - name: run-tests-2
+            template: test-2
+        - - name: build-and-push-image
+            template: docker-build-push
+    
+    - name: clone
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args:
+          - |
+            apk update
+            apk add --no-cache curl kubectl git 
+            apk add aws-cli
+            apk cache clean
+            GITHUB_TOKEN=$(kubectl get secret github-access -o jsonpath='{.data.token}' | base64 -d)
+            # If /workdir exists and is not empty, clean it up
+            if [ -d "/workdir" ] && [ "$(ls -A /workdir)" ]; then
+              rm -rf /workdir/*
+            fi
+            git clone --depth 1 --single-branch --branch master https://$GITHUB_TOKEN@github.com/polar-bookstore/http-server.git /workdir
+        volumeMounts:
+          - name: workspace-pvc
+            mountPath: /workdir
+    
+    - name: test-1
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args:
+          - |
+            echo "Running Test 1"
+            # Add your actual test commands here
+        volumeMounts:
+          - name: workspace-pvc
+            mountPath: /workdir
+    
+    - name: test-2
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args:
+          - |
+            echo "Running Test 2"
+            # Add your actual test commands here
+        volumeMounts:
+          - name: workspace-pvc
+            mountPath: /workdir
+    
+    - name: docker-build-push
+      container:
+        image: moby/buildkit:latest
+        command: [sh, -c]
+        args:
+          - |
+            set -e
+            export DOCKER_CONFIG=/root/.docker
+            mkdir -p $DOCKER_CONFIG
+            apk update
+            apk add aws-cli
+            apk add --no-cache go
+            go install github.com/google/go-containerregistry/cmd/crane@latest
+            
+            # Ensure Crane is in PATH
+            export PATH=$PATH:/root/go/bin
+            
+            # Authenticate to ECR using AWS CLI
+            aws ecr get-login-password --region eu-west-1 | crane auth login --username AWS --password-stdin 267074127319.dkr.ecr.eu-west-1.amazonaws.com
+            buildctl-daemonless.sh \
+              build \
+              --frontend dockerfile.v0 \
+              --local context=/workdir \
+              --local dockerfile=/workdir \
+              --output type=image,name=267074127319.dkr.ecr.eu-west-1.amazonaws.com/polar-bookstore:http-server-argo-v1,push=true
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: workspace-pvc
+            mountPath: /workdir
+
