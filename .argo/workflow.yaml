@@ -2,6 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: build-docker-http-server
+  namespace: argo
 spec:
   entrypoint: build-docker-image
   serviceAccountName: argo-workflow-sa
