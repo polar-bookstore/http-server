@@ -6,6 +6,15 @@ metadata:
 spec:
   entrypoint: build-docker-image
   serviceAccountName: argo-workflow-sa
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace-pvc
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: gp2-csi  # Update if needed
   templates:
     - name: build-docker-image
       steps:
@@ -34,6 +43,9 @@ spec:
               rm -rf /workdir/*
             fi
             git clone --depth 1 --single-branch --branch master https://$GITHUB_TOKEN@github.com/polar-bookstore/http-server.git /workdir
+        volumeMounts:
+          - name: workspace-pvc
+            mountPath: /workdir
     
     - name: test-1
       container:
@@ -43,6 +55,9 @@ spec:
           - |
             echo "Running Test 1"
             # Add your actual test commands here
+        volumeMounts:
+          - name: workspace-pvc
+            mountPath: /workdir
     
     - name: test-2
       container:
@@ -52,6 +67,9 @@ spec:
           - |
             echo "Running Test 2"
             # Add your actual test commands here
+        volumeMounts:
+          - name: workspace-pvc
+            mountPath: /workdir
     
     - name: docker-build-push
       container:
@@ -72,13 +90,15 @@ spec:
             
             # Authenticate to ECR using AWS CLI
             aws ecr get-login-password --region eu-west-1 | crane auth login --username AWS --password-stdin 267074127319.dkr.ecr.eu-west-1.amazonaws.com
-            echo "build"
-            #            buildctl-daemonless.sh \
-            #              build \
-            #              --frontend dockerfile.v0 \
-            #              --local context=/workdir \
-            #              --local dockerfile=/workdir \
-            #              --output type=image,name=267074127319.dkr.ecr.eu-west-1.amazonaws.com/polar-bookstore:http-server-argo-v1,push=true
+            buildctl-daemonless.sh \
+              build \
+              --frontend dockerfile.v0 \
+              --local context=/workdir \
+              --local dockerfile=/workdir \
+              --output type=image,name=267074127319.dkr.ecr.eu-west-1.amazonaws.com/polar-bookstore:http-server-argo-v1,push=true
         securityContext:
           privileged: true
+        volumeMounts:
+          - name: workspace-pvc
+            mountPath: /workdir
 
